@@ -81,7 +81,7 @@
         renderer.setClearColor(0xEEEEEE);
         document.body.appendChild(renderer.domElement);
         camera.position.z = 25;
-        
+
 
         function clear_scene() {
             while (scene.children.length > 0) {
@@ -90,11 +90,11 @@
         }
 
         function render_scene() {
-            rendered.render(scene, camera);
+            renderer.render(scene, camera);
         }
 
-        function add_curve(points) {
-            const curve = new BezierCurve(points);
+        function add_curve(control_points) {
+            const curve = new BezierCurve(control_points);
             const points = curve.getPoints(50);
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
@@ -107,11 +107,9 @@
         add_curve([new THREE.Vector3(-10, 0, 0),
         new THREE.Vector3(-5, 15, 0),
         new THREE.Vector3(20, 15, 0),
-        new THREE.Vector3(10, 0, 0),
-        new THREE.Vector3(20, 12, 0),
-        new THREE.Vector3(1, 12, 2)]);
+        new THREE.Vector3(10, 0, 0)]);
 
-
+        //file loader
         const gui = new dat.GUI({ width: 310 });
         const params = {
             loadFile: function () {
@@ -119,7 +117,7 @@
             }
         };
 
-        gui.add(params, 'loadFile').name("Load ");
+        gui.add(params, 'loadFile').name("Load");
 
 
         render_scene();
