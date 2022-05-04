@@ -5,36 +5,124 @@
 </head>
 
 <body>
+    <input id="myInput" type="file" style="visibility:hidden" />
     <script src="js/three.js"></script>
+    <script src="js/dat.gui.min.js"></script>
+
     <script>
+        class BezierCurve extends THREE.Curve {
+            constructor(points_array = new Array()) {
+                super();
+                this.type = 'BezierCurve';
+                this.points = points_array;
+                this.degree = this.points.length - 1;
+            }
+
+            #factorial(num) {
+                var rval = 1;
+                for (var i = 2; i <= num; i++)
+                    rval = rval * i;
+                return rval;
+            }
+
+            getPoint(t, optionalTarget = new THREE.Vector3()) {
+                const point = optionalTarget
+                let x = 0, y = 0, z = 0;
+                const nfact = this.#factorial(this.degree);
+                for (let i = 0; i <= this.degree; ++i) {
+                    const noveri = nfact / (this.#factorial(i) * this.#factorial(this.degree - i));
+                    const coef1 = Math.pow(1 - t, this.degree - i);
+                    const coef2 = Math.pow(t, i);
+                    x += noveri * coef1 * coef2 * this.points[i].x;
+                    y += noveri * coef1 * coef2 * this.points[i].y;
+                    z += noveri * coef1 * coef2 * this.points[i].z;
+                }
+                point.set(x, y, z);
+                return point;
+            }
+
+            controlPoints() {
+                return this.points;
+            }
+
+            copy(source) {
+                super.copy(source);
+                this.points = [];
+                for (let i = 0; i < source.points.length; ++i) {
+                    this.points[i] = source.points[i];
+                }
+                return this;
+            }
+
+            toJSON() {
+                const data = super.toJSON();
+                data.points[i] = [];
+                for (let i = 0; i < this.points.length; ++i) {
+                    data.points[i] = this.points[i].toArray();
+                }
+                return data;
+            }
+
+            fromJSON(json) {
+                super.fromJSON(json);
+                this.points = [];
+                for (let i = 0; i < json.points.length; ++i) {
+                    let vec = new Vector3(0, 0, 0);
+                    vec.fromArray(json.points[i]);
+                    this.points[i] = vec;
+                }
+                return this;
+            }
+        }
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setClearColor(0xEEEEEE);
         document.body.appendChild(renderer.domElement);
-
-
-        const curve = new THREE.CubicBezierCurve3(
-            new THREE.Vector3(-10, 0, 0),
-            new THREE.Vector3(-5, 15, 0),
-            new THREE.Vector3(20, 15, 0),
-            new THREE.Vector3(10, 0, 0)
-        );
-
-        const points = curve.getPoints(50);
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-        const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-
-        // Create the final object to add to the scene
-        const curveObject = new THREE.Line(geometry, material);
-
-        scene.add(curveObject);
-
         camera.position.z = 25;
-        renderer.render(scene, camera);
+        
+
+        function clear_scene() {
+            while (scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+        }
+
+        function render_scene() {
+            rendered.render(scene, camera);
+        }
+
+        function add_curve(points) {
+            const curve = new BezierCurve(points);
+            const points = curve.getPoints(50);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+
+            const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
+
+            // Create the final object to add to the scene
+            scene.add(new THREE.Line(geometry, material));
+        }
+
+        add_curve([new THREE.Vector3(-10, 0, 0),
+        new THREE.Vector3(-5, 15, 0),
+        new THREE.Vector3(20, 15, 0),
+        new THREE.Vector3(10, 0, 0),
+        new THREE.Vector3(20, 12, 0),
+        new THREE.Vector3(1, 12, 2)]);
+
+
+        const gui = new dat.GUI({ width: 310 });
+        const params = {
+            loadFile: function () {
+                document.getElementById('myInput').click();
+            }
+        };
+
+        gui.add(params, 'loadFile').name("Load ");
+
+
+        render_scene();
 
     </script>
 </body>
