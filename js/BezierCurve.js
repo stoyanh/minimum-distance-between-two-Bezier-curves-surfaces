@@ -1,5 +1,5 @@
-import { Vector3 } from "three.js"
-import { Curve } from "three.js"
+// import { Vector3 } from "three.js"
+// import { Curve } from "three.js"
 
 class BezierCurve extends THREE.Curve {
     constructor(points_array = new Array()) {
@@ -20,8 +20,8 @@ class BezierCurve extends THREE.Curve {
         const point = optionalTarget
         let x = 0, y = 0, z = 0;
         const nfact = this.#factorial(this.degree);
-        for (let i = 0; i < this.degree; ++i) {
-            const noveri = nfact / this.#factorial(i) * this.#factorial(this.degree - i);
+        for (let i = 0; i <= this.degree; ++i) {
+            const noveri = nfact / (this.#factorial(i) * this.#factorial(this.degree - i));
             const coef1 = Math.pow(1 - t, this.degree - i);
             const coef2 = Math.pow(t, i);
             x += noveri * coef1 * coef2 * this.points[i].x;
@@ -61,5 +61,3 @@ class BezierCurve extends THREE.Curve {
         return this;
     }
 }
-
-export { BezierCurve }
