@@ -30,21 +30,20 @@
             renderer.render(scene, camera);
         }
 
-        function add_curve(control_points) {
+        function add_curve(control_points, color = 0xff0000, lines_color = 0xff00aa) {
             const curve = new BezierCurve(control_points);
-            const points = curve.getPoints(50);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-            const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
-
-            // Create the final object to add to the scene
-            scene.add(new THREE.Line(geometry, material));
+            curve.addToScene(scene, true, color, lines_color);
         }
 
         add_curve([new THREE.Vector3(-10, 0, 0),
         new THREE.Vector3(-5, 15, 0),
         new THREE.Vector3(20, 15, 0),
-        new THREE.Vector3(10, 0, 0)]);
+        new THREE.Vector3(10, 0, 0)], 0x32CD32, 0x0000FF);
+
+        add_curve([new THREE.Vector3(-20, 0, 0),
+        new THREE.Vector3(-10, 5, 0),
+        new THREE.Vector3(10, 5, 0),
+        new THREE.Vector3(23, 5, 0)]);
 
         //file loader
         const gui = new dat.GUI({ width: 310 });
