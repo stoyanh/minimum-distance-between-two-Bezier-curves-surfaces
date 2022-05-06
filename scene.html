@@ -26,6 +26,8 @@
         controls.maxPolarAngle = Math.PI / 2;
         window.addEventListener('resize', onWindowResize);
 
+        let curves = [];
+
         function onWindowResize() {
 
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -46,6 +48,7 @@
 
         function add_curve(control_points, color = 0xff0000, lines_color = 0xff00aa) {
             const curve = new BezierCurve(control_points);
+            curves.push(curve);
             curve.addToScene(scene, true, color, lines_color);
         }
 

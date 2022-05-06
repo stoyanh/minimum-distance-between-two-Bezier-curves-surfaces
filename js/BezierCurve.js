@@ -1,6 +1,3 @@
-// import { Vector3 } from "three.js"
-// import { Curve } from "three.js"
-
 class BezierCurve extends THREE.Curve {
     constructor(points_array = new Array()) {
         super();
