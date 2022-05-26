@@ -159,6 +159,9 @@ function gjk_min_dist(curve1_points, curve2_points)
     let close_enough = false;
     const null_vector = new THREE.Vector3(0, 0, 0);
     let iteration = 0;
+    //store dirs associated to points
+    //we can get extreme points for the 2 curves using the dirs
+    let points_dir_map = new Map();
     while (!close_enough && !v.equals(null_vector)) {
         //new simplex point
         w = support_point(curve1_points, curve2_points, v.clone().negate());
@@ -167,6 +170,7 @@ function gjk_min_dist(curve1_points, curve2_points)
         close_enough = v.length() - lower_bound <= EPS;
         if (!close_enough) {
             points_set.push(w);
+            points_dir_map.set(w.toArray().toString(), v.clone().negate());
             if (points_set.length > 1) {
                 const lambdas_and_points = compute_dist_and_set(points_set);
                 points_set = lambdas_and_points.set;
@@ -174,6 +178,15 @@ function gjk_min_dist(curve1_points, curve2_points)
                 v = new THREE.Vector3();
                 for (let i = 0; i < lambdas.length; ++i) {
                     v.add(points_set[i].clone().multiplyScalar(lambdas[i]));
+                }
+                /*
+                * delete removed points from points_dir_map
+                */
+                for (const vec_str of points_dir_map.keys()) {
+                    const el = points_set.find(element => element.toArray().toString() == vec_str);
+                    if (el === undefined) {
+                        points_dir_map.delete(vec_str);
+                    }
                 }
             } 
             else {
@@ -183,5 +196,19 @@ function gjk_min_dist(curve1_points, curve2_points)
         ++iteration;
     }
 
-    return v.lengthSq();
+    //determine the exact closest point
+    let point_curve1 = new THREE.Vector3();
+    let point_curve2 = new THREE.Vector3();
+    for (let i = 0; i < points_set.length; ++i) {
+        let dir = points_dir_map.get(points_set[i].toArray().toString()).clone();
+        const point1 = extreme_point(curve1_points, dir);
+        const point2 = extreme_point(curve2_points, dir.negate());
+        point_curve1.add(point1.multiplyScalar(lambdas[i]));
+        point_curve2.add(point2.multiplyScalar(lambdas[i]));
+    }
+    return {
+        "point1": point_curve1,
+        "point2": point_curve2,
+        "length": v.length()
+    };
 }
