@@ -1,13 +1,18 @@
-function extreme_point(shape_points, dir) {
-    let res_point = new THREE.Vector3(0, 0, 0);
+function extreme_point_index(shape_points, dir) {
+    let res_index = 0;
     let max_dot_product = Number.MIN_SAFE_INTEGER; 
     for (let i = 0; i < shape_points.length; ++i) {
         if (shape_points[i].dot(dir) > max_dot_product) {
             max_dot_product = shape_points[i].dot(dir);
-            res_point = shape_points[i].clone();
+            res_index = i;
         }
     }
-    return res_point;
+    return res_index;
+}
+
+function extreme_point(shape_points, dir) {
+    const idx = extreme_point_index(shape_points, dir);
+    return shape_points[idx].clone();
 }
 
 function support_point(shape1, shape2, dir) {
@@ -151,8 +156,9 @@ function compute_dist_and_set(points) {
 function gjk_min_dist(curve1_points, curve2_points)
 {
     let points_set = [];
+    let lambdas =  [];
     let lower_bound = 0;
-    const EPS = 0.0001;
+    const EPS = 0.0000001;
     //closest point
     let v = curve1_points[0].clone();
     v.sub(curve2_points[0]);
@@ -174,7 +180,7 @@ function gjk_min_dist(curve1_points, curve2_points)
             if (points_set.length > 1) {
                 const lambdas_and_points = compute_dist_and_set(points_set);
                 points_set = lambdas_and_points.set;
-                const lambdas = lambdas_and_points.lambdas;
+                lambdas = lambdas_and_points.lambdas;
                 v = new THREE.Vector3();
                 for (let i = 0; i < lambdas.length; ++i) {
                     v.add(points_set[i].clone().multiplyScalar(lambdas[i]));
@@ -191,24 +197,36 @@ function gjk_min_dist(curve1_points, curve2_points)
             } 
             else {
                 v = w;
+                lambdas = [1];
             }
         }
         ++iteration;
     }
+    if (points_set.length == 0) {
+        points_set.push(v);
+        points_dir_map.set(v.toArray().toString(), v.clone());
+        lambdas = [1];
+    }
 
     //determine the exact closest point
     let point_curve1 = new THREE.Vector3();
+    let lambdas1 = new Array(curve1_points.length).fill(0);
     let point_curve2 = new THREE.Vector3();
+    let lambdas2 = new Array(curve2_points.length).fill(0);
     for (let i = 0; i < points_set.length; ++i) {
         let dir = points_dir_map.get(points_set[i].toArray().toString()).clone();
-        const point1 = extreme_point(curve1_points, dir);
-        const point2 = extreme_point(curve2_points, dir.negate());
-        point_curve1.add(point1.multiplyScalar(lambdas[i]));
-        point_curve2.add(point2.multiplyScalar(lambdas[i]));
+        const point1_i = extreme_point_index(curve1_points, dir);
+        lambdas1[point1_i] += lambdas[i];
+        const point2_i = extreme_point_index(curve2_points, dir.negate());
+        lambdas2[point2_i] += lambdas[i];
+        point_curve1.add(curve1_points[point1_i].clone().multiplyScalar(lambdas[i]));
+        point_curve2.add(curve2_points[point2_i].clone().multiplyScalar(lambdas[i]));
     }
     return {
         "point1": point_curve1,
         "point2": point_curve2,
+        "lambdas1": lambdas1, 
+        "lambdas2": lambdas2,
         "length": v.length()
     };
 }
