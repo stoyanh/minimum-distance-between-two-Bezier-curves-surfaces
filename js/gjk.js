@@ -41,6 +41,14 @@ function calc_points_cofactors3(points) {
     return [cofactor1, cofactor2, cofactor3];
 }
 
+function calc_points_cofactors4(points) {
+    const cofactor1 = calc_cofactor([points[1], points[2], points[3]], points[0]);
+    const cofactor2 = calc_cofactor([points[0], points[2], points[3]], points[1]);
+    const cofactor3 = calc_cofactor([points[0], points[1], points[3]], points[2]);
+    const cofactor4 = calc_cofactor([points[0], points[1], points[2]], points[3]);
+    return [cofactor1, cofactor2,cofactor3, cofactor4];
+}
+
 function calc_cofactors(points) {
     if (points.length == 1) {
         return calc_points_cofactors1(points);
@@ -50,6 +58,9 @@ function calc_cofactors(points) {
     }
     else if (points.length == 3) {
         return calc_points_cofactors3(points);
+    }
+    else if (points.length == 4) {
+        return calc_points_cofactors4(points);
     }
     else {
         alert("Too many points");
@@ -97,6 +108,9 @@ function all_subsets(points) {
                 res.push([i, j, points.length - 1]);
             }
         }
+    }
+    if (points.length == 4) {
+        res.push([0, 1, 2, 3]);
     }
     return res;
 }
@@ -179,6 +193,11 @@ function gjk_min_dist(curve1_points, curve2_points)
             points_dir_map.set(w.toArray().toString(), v.clone().negate());
             if (points_set.length > 1) {
                 const lambdas_and_points = compute_dist_and_set(points_set);
+                if (lambdas_and_points.set.length == 4) {
+                    points_dir_map.delete(w.toArray().toString());
+                    points_set.pop();
+                    break;
+                }
                 points_set = lambdas_and_points.set;
                 lambdas = lambdas_and_points.lambdas;
                 v = new THREE.Vector3();
