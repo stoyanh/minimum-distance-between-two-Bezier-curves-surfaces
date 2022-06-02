@@ -94,7 +94,7 @@
             },
             showControlPoints: false
         };
-        gui.add(params, 'loadFile').name("Load");
+        gui.add(params, 'loadFile').name("Load file");
         gui.add(params, "showControlPoints").name("Show control points").listen().onChange(function(val) {
             showControlPoints = val;
             update();
