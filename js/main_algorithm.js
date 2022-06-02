@@ -98,7 +98,7 @@ function subdivision_parameter(lambdas) {
     return res; 
 }
 
-function algorithm(curve1_points, curve2_points, ubound)
+function min_dist_algorithm(curve1_points, curve2_points, ubound)
 {
     const tolerance = 0.00000001;
     let ub_data = upper_bound(curve1_points, curve2_points);
@@ -117,20 +117,24 @@ function algorithm(curve1_points, curve2_points, ubound)
         const c12 = controlPointsForCurveInRange(subdivision_param1, 1, curve1_points);
         const c21 = controlPointsForCurveInRange(0, subdivision_param2, curve2_points);
         const c22 = controlPointsForCurveInRange(subdivision_param2, 1, curve2_points);
-        const data1121 = algorithm(c11, c21, ubound)
+        const data1121 = min_dist_algorithm(c11, c21, ubound)
         if (data1121["length"] < ubound) {
+            ubound = data1121["length"];
             res = {...data1121};
         }
-        const data1122 = algorithm(c11, c22, ubound);
+        const data1122 = min_dist_algorithm(c11, c22, ubound);
         if (data1122["length"] < ubound) {
+            ubound = data1122["length"];
             res = {...data1122};
         }
-        const data1221 = algorithm(c12, c21, ubound);
+        const data1221 = min_dist_algorithm(c12, c21, ubound);
         if (data1221["length"] < ubound) {
+            ubound = data1221["length"];
             res = {...data1221};
         }
-        const data1222 = algorithm(c12, c22, ubound);
-        if (data1221["length"] < ubound) {
+        const data1222 = min_dist_algorithm(c12, c22, ubound);
+        if (data1222["length"] < ubound) {
+            ubound = data1222["length"];
             res = {...data1222};
         }
     }
