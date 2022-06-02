@@ -28,7 +28,10 @@
         controls.maxPolarAngle = Math.PI / 2;
         window.addEventListener('resize', onWindowResize);
 
+        let showControlPoints = false;
         let curves = [];
+        //curve color, points color
+        let colors = [[0xff0000, 0xff00aa], [0x32CD32, 0x0000FF]];
 
         function onWindowResize() {
 
@@ -48,38 +51,110 @@
             renderer.render(scene, camera);
         }
 
-        function add_curve(control_points, color = 0xff0000, lines_color = 0xff00aa) {
-            const curve = new BezierCurve(control_points);
-            curves.push(curve);
-            curve.addToScene(scene, true, color, lines_color);
+        function add_curve(control_points) {
+            curves.push(control_points);
         }
+
+        function add_distance(scene, points) {
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0x6A5ACD });
+
+            // Create the final object to add to the scene
+            let line = new THREE.Line(geometry, material);
+            line.computeLineDistances();    
+            scene.add(line);
+        }
+
 
         function animate() {
             requestAnimationFrame(animate);
+            controls.update();
             render_scene();
         }
 
-        add_curve([new THREE.Vector3(-10, 0, 0),
-        new THREE.Vector3(-5, 15, 0),
-        new THREE.Vector3(20, 15, 0),
-        new THREE.Vector3(10, 0, 0)], 0x32CD32, 0x0000FF);
+        function calc_min_dist() {
+            if (curves.length < 2) {
+                alert("There must be at least 2 curves!");
+                return;
+            }
 
-        add_curve([new THREE.Vector3(-20, 0, 0),
-        new THREE.Vector3(-10, 5, 0),
-        new THREE.Vector3(10, 5, 0),
-        new THREE.Vector3(23, 5, 0)]);
+            const min_dist = min_dist_algorithm(curves[0], curves[1], Number.MAX_SAFE_INTEGER);
+            add_distance(scene, [min_dist["point1"], min_dist["point2"]]);
+        }
+
+        function update() {
+            clear_scene();
+            const axesHelper = new THREE.AxesHelper( 5 );
+            scene.add( axesHelper );
+            for (let i = 0; i < curves.length; ++i) {
+                const bezier_curve = new BezierCurve(curves[i]);
+                bezier_curve.addToScene(scene, showControlPoints, 
+                colors[i % colors.length][0], colors[i % colors.length][1]);
+            }
+            calc_min_dist();
+            controls.update();
+            render_scene();
+        }
 
         //file loader
         const gui = new dat.GUI({ width: 310 });
         const params = {
             loadFile: function () {
                 document.getElementById('myInput').click();
-            }
+            },
+            showControlPoints: false
         };
-
         gui.add(params, 'loadFile').name("Load");
+        gui.add(params, "showControlPoints").name("Show control points").listen().onChange(function(val) {
+            showControlPoints = val;
+            update();
+        });
 
+        const fileSelector = document.getElementById('myInput');
+        fileSelector.onclick = function() {
+            this.value = null;
+        };
+        fileSelector.addEventListener('change', (event) => {
+            const fileList = event.target.files;
+            var file = fileList[0];
+				var textType = /text.*/;
 
+				if (file.type.match(textType))
+				{
+					var reader = new FileReader();
+					reader.onload = function(e)
+					{
+                        let content = e.target.result;
+                        curves = [];
+                        let begin = content.indexOf("{");
+                        let end = content.indexOf("}");
+                        while (begin != end && begin != -1 && end != - 1) {   
+                            let curve_points = [];                  
+                            let vectors_portion = content.slice(begin + 1, end)
+                            let vec_start = vectors_portion.indexOf("(");
+                            let vec_end = vectors_portion.indexOf(")");
+                            while (vec_start != vec_end && vec_start != -1 && vec_end != -1) {
+                                let numbers = vectors_portion.slice(vec_start + 1, vec_end).split(',').map(Number);
+                                curve_points.push(new THREE.Vector3().fromArray(numbers));
+                                vectors_portion = vectors_portion.substr(vec_end + 1);
+                                vec_start = vectors_portion.indexOf("(");
+                                vec_end = vectors_portion.indexOf(")");
+                            }
+
+                            content = content.substr(end + 1);
+                            begin = content.indexOf("{");
+                            end = content.indexOf("}");
+                            add_curve(curve_points);
+                        }
+                        update();
+					}
+
+					reader.readAsText(file);	
+                }
+        });
+
+        const axesHelper = new THREE.AxesHelper( 5 );
+        scene.add( axesHelper );
         animate();
 
     </script>
