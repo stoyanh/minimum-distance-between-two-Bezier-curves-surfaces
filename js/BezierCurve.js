@@ -30,7 +30,7 @@ class BezierCurve extends THREE.Curve {
     }
 
     addToScene(scene, addControlPoints, color, line_color) {
-        const points = super.getPoints(50);
+        const points = super.getPoints(100);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({ color: color });
 
