@@ -38,14 +38,7 @@ class BezierCurve extends THREE.Curve {
         scene.add(new THREE.Line(geometry, material));
         if (addControlPoints) {
             for (let i = 0; i < this.points.length; ++i) {
-                var dotGeometry = new THREE.BufferGeometry();
-                let points_array = [];
-                this.points[i].toArray(points_array);
-                dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(points_array, 3));
-                var dotMaterial = new THREE.PointsMaterial({ size: 6, sizeAttenuation: false, color: color });
-                var dot = new THREE.Points(dotGeometry, dotMaterial);
-                scene.add(dot);
-
+                add_point(scene, this.points[i], color);
                 if (i > 0) {
                     //add lines
                     const line_points = [this.points[i - 1], this.points[i]];

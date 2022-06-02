@@ -8,6 +8,7 @@
     <input id="myInput" type="file" style="visibility:hidden" />
     <script src="js/three.js"></script>
     <script src="js/dat.gui.min.js"></script>
+    <script src="js/utils.js"></script>
     <script src="js/BezierCurve.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/gjk.js"></script>
@@ -54,17 +55,6 @@
         function add_curve(control_points) {
             curves.push(control_points);
         }
-
-        function add_distance(scene, points) {
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ color: 0x6A5ACD });
-
-            // Create the final object to add to the scene
-            let line = new THREE.Line(geometry, material);
-            line.computeLineDistances();    
-            scene.add(line);
-        }
-
 
         function animate() {
             requestAnimationFrame(animate);
