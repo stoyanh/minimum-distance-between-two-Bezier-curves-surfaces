@@ -19,3 +19,19 @@ function add_distance(scene, points, color=0x6A5ACD) {
     add_point(scene, points[0], color);
     add_point(scene, points[1], color);
 }
+
+function factorial(num) {
+    let rval = 1;
+    for (let i = 2; i <= num; i++) {
+        rval = rval * i;
+    }
+    return rval;
+}
+
+function nOverI(n, i) {
+    return factorial(n) / (factorial(i) * factorial(n - i));
+}
+
+function bernsteinPol(t, n, i) {
+    return nOverI(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
+}

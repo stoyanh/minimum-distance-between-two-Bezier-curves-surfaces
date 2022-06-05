@@ -8,13 +8,9 @@ class BezierCurve extends THREE.Curve {
 
     getPoint(t, optionalTarget = new THREE.Vector3()) {
         optionalTarget = new THREE.Vector3();
-        const nfact = factorial(this.degree);
         for (let i = 0; i <= this.degree; ++i) {
-            const noveri = nfact / (factorial(i) * factorial(this.degree - i));
-            const coef1 = Math.pow(1 - t, this.degree - i);
-            const coef2 = Math.pow(t, i);
             let point = this.points[i].clone();
-            optionalTarget.add(point.multiplyScalar(coef1 * coef2 * noveri));
+            optionalTarget.add(point.multiplyScalar(bernsteinPol(t, this.degree, i)));
         }
         return optionalTarget;
     }
