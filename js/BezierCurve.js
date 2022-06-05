@@ -6,27 +6,17 @@ class BezierCurve extends THREE.Curve {
         this.degree = this.points.length - 1;
     }
 
-    #factorial(num) {
-        var rval = 1;
-        for (var i = 2; i <= num; i++)
-            rval = rval * i;
-        return rval;
-    }
-
     getPoint(t, optionalTarget = new THREE.Vector3()) {
-        const point = optionalTarget
-        let x = 0, y = 0, z = 0;
-        const nfact = this.#factorial(this.degree);
+        optionalTarget = new THREE.Vector3();
+        const nfact = factorial(this.degree);
         for (let i = 0; i <= this.degree; ++i) {
-            const noveri = nfact / (this.#factorial(i) * this.#factorial(this.degree - i));
+            const noveri = nfact / (factorial(i) * factorial(this.degree - i));
             const coef1 = Math.pow(1 - t, this.degree - i);
             const coef2 = Math.pow(t, i);
-            x += noveri * coef1 * coef2 * this.points[i].x;
-            y += noveri * coef1 * coef2 * this.points[i].y;
-            z += noveri * coef1 * coef2 * this.points[i].z;
+            let point = this.points[i].clone();
+            optionalTarget.add(point.multiplyScalar(coef1 * coef2 * noveri));
         }
-        point.set(x, y, z);
-        return point;
+        return optionalTarget;
     }
 
     addToScene(scene, addControlPoints, color, line_color) {
