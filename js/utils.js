@@ -28,10 +28,10 @@ function factorial(num) {
     return rval;
 }
 
-function nOverI(n, i) {
+function n_over_i(n, i) {
     return factorial(n) / (factorial(i) * factorial(n - i));
 }
 
-function bernsteinPol(t, n, i) {
-    return nOverI(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
+function bernstein_pol(t, n, i) {
+    return n_over_i(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
 }

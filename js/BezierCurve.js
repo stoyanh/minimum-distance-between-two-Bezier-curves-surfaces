@@ -10,7 +10,9 @@ class BezierCurve extends THREE.Curve {
         optionalTarget = new THREE.Vector3();
         for (let i = 0; i <= this.degree; ++i) {
             let point = this.points[i].clone();
-            optionalTarget.add(point.multiplyScalar(bernsteinPol(t, this.degree, i)));
+            optionalTarget.add(
+                point.multiplyScalar(bernstein_pol(t, this.degree, i))
+                );
         }
         return optionalTarget;
     }
