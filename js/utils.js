@@ -35,3 +35,38 @@ function n_over_i(n, i) {
 function bernstein_pol(t, n, i) {
     return n_over_i(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
 }
+
+function parse_curves_file(file, curves, on_done) {
+    let textType = /text.*/;
+    if (file.type.match(textType))
+    {
+        let reader = new FileReader();
+        reader.onload = function(e)
+        {
+            let content = e.target.result;
+            let begin = content.indexOf("{");
+            let end = content.indexOf("}");
+            while (begin != end && begin != -1 && end != - 1) {   
+                let curve_points = [];                  
+                let vectors_portion = content.slice(begin + 1, end)
+                let vec_start = vectors_portion.indexOf("(");
+                let vec_end = vectors_portion.indexOf(")");
+                while (vec_start != vec_end && vec_start != -1 && vec_end != -1) {
+                    let numbers = vectors_portion.slice(vec_start + 1, vec_end).split(',').map(Number);
+                    curve_points.push(new THREE.Vector3().fromArray(numbers));
+                    vectors_portion = vectors_portion.substr(vec_end + 1);
+                    vec_start = vectors_portion.indexOf("(");
+                    vec_end = vectors_portion.indexOf(")");
+                }
+
+                content = content.substr(end + 1);
+                begin = content.indexOf("{");
+                end = content.indexOf("}");
+                curves.push(curve_points);
+            }
+            on_done();
+        }
+
+        reader.readAsText(file);	
+    }
+}

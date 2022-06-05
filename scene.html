@@ -52,10 +52,6 @@
             renderer.render(scene, camera);
         }
 
-        function add_curve(control_points) {
-            curves.push(control_points);
-        }
-
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -106,41 +102,10 @@
         };
         fileSelector.addEventListener('change', (event) => {
             const fileList = event.target.files;
-            var file = fileList[0];
-				var textType = /text.*/;
-
-				if (file.type.match(textType))
-				{
-					var reader = new FileReader();
-					reader.onload = function(e)
-					{
-                        let content = e.target.result;
-                        curves = [];
-                        let begin = content.indexOf("{");
-                        let end = content.indexOf("}");
-                        while (begin != end && begin != -1 && end != - 1) {   
-                            let curve_points = [];                  
-                            let vectors_portion = content.slice(begin + 1, end)
-                            let vec_start = vectors_portion.indexOf("(");
-                            let vec_end = vectors_portion.indexOf(")");
-                            while (vec_start != vec_end && vec_start != -1 && vec_end != -1) {
-                                let numbers = vectors_portion.slice(vec_start + 1, vec_end).split(',').map(Number);
-                                curve_points.push(new THREE.Vector3().fromArray(numbers));
-                                vectors_portion = vectors_portion.substr(vec_end + 1);
-                                vec_start = vectors_portion.indexOf("(");
-                                vec_end = vectors_portion.indexOf(")");
-                            }
-
-                            content = content.substr(end + 1);
-                            begin = content.indexOf("{");
-                            end = content.indexOf("}");
-                            add_curve(curve_points);
-                        }
-                        update();
-					}
-
-					reader.readAsText(file);	
-                }
+            let file = fileList[0];
+            parse_curves_file(file, curves, on_done => {
+                update();
+            });
         });
 
         const axesHelper = new THREE.AxesHelper( 5 );
