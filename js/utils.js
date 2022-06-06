@@ -86,4 +86,3 @@ function parse_curves_file(file, curves, on_done) {
         reader.readAsText(file);	
     }
 }
-}
