@@ -5,11 +5,14 @@
 </head>
 
 <body>
-    <input id="myInput" type="file" style="visibility:hidden" />
+    <input id="curves_input" type="file" style="visibility:hidden" />
+    <input id="surfaces_input" type="file" style="visibility:hidden" />
     <script src="js/three.js"></script>
+    <script src="js/ParametricGeometry.js"></script>
     <script src="js/dat.gui.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/BezierCurve.js"></script>
+    <script src="js/BezierSurface.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/gjk.js"></script>
     <script src="js/main_algorithm.js"></script>
@@ -29,8 +32,10 @@
         controls.maxPolarAngle = Math.PI / 2;
         window.addEventListener('resize', onWindowResize);
 
-        let showControlPoints = false;
+        let showControlPointsCurves = false;
+        let showControlPointsSurfaces = false;
         let curves_points = [];
+        let surfaces_points = [];
         //curve color, points color
         let colors = [[0xff0000, 0xff00aa], [0x32CD32, 0x0000FF]];
 
@@ -74,7 +79,7 @@
             scene.add( axesHelper );
             for (let i = 0; i < curves_points.length; ++i) {
                 const bezier_curve = new BezierCurve(curves_points[i]);
-                bezier_curve.addToScene(scene, showControlPoints, 
+                bezier_curve.addToScene(scene, showControlPointsCurves, 
                 colors[i % colors.length][0], colors[i % colors.length][1]);
             }
             calc_min_dist();
@@ -82,33 +87,80 @@
             render_scene();
         }
 
+        function update_surfaces() {
+            clear_scene();
+            const axesHelper = new THREE.AxesHelper( 5 );
+            scene.add( axesHelper );
+            for (let i = 0; i < surfaces_points.length; ++i) {
+                const bezier_surface = new BezierSurface(surfaces_points[i]);
+                bezier_surface.addToScene(scene, showControlPointsSurfaces, 
+                colors[i % colors.length][0]);
+            }
+          
+            controls.update();
+            render_scene();
+        }
+
         //file loader
         const gui = new dat.GUI({ width: 310 });
-        const params = {
+
+        // CURVES GUI
+        const curves_params = {
             loadFile: function () {
-                document.getElementById('myInput').click();
+                document.getElementById('curves_input').click();
             },
             showControlPoints: false
         };
-        gui.add(params, 'loadFile').name("Load file");
-        gui.add(params, "showControlPoints").name("Show control points").listen().onChange(function(val) {
-            showControlPoints = val;
+        let curves_folder = gui.addFolder("Curves");
+        curves_folder.open();
+        curves_folder.add(curves_params, 'loadFile').name("Load file");
+        curves_folder.add(curves_params, "showControlPoints").name("Show control points").listen().onChange(function(val) {
+            showControlPointsCurves = val;
             update();
         });
 
-        const fileSelector = document.getElementById('myInput');
-        fileSelector.onclick = function() {
+        const fileSelector_curves = document.getElementById('curves_input');
+        fileSelector_curves.onclick = function() {
             this.value = null;
         };
-        fileSelector.addEventListener('change', (event) => {
+        fileSelector_curves.addEventListener('change', (event) => {
             const fileList = event.target.files;
             let file = fileList[0];
             curves_points = [];
             parse_curves_file(file, curves_points, on_done => {
                 update();
-
             });
         });
+        // CURVES GUI END
+
+        // SURFACES GUI
+        const surfaces_params = {
+            loadFile: function () {
+                document.getElementById('surfaces_input').click();
+            },
+            showControlPoints: false
+        };
+        let surfaces_folder = gui.addFolder("Surfaces");
+        surfaces_folder.open();
+        surfaces_folder.add(surfaces_params, 'loadFile').name("Load file");
+        surfaces_folder.add(surfaces_params, "showControlPoints").name("Show control points").listen().onChange(function(val) {
+            showControlPointsSurfaces = val;
+            update_surfaces();
+        });
+        const fileSelector_surfaces = document.getElementById('surfaces_input');
+        fileSelector_surfaces.onclick = function() {
+            this.value = null;
+        };
+        fileSelector_surfaces.addEventListener('change', (event) => {
+            const fileList = event.target.files;
+            let file = fileList[0];
+            surfaces_points = [];
+            parse_surfaces_file(file, surfaces_points, on_done => {
+                update_surfaces();
+            });
+        });
+
+        // SURFACES GUI END
 
         const axesHelper = new THREE.AxesHelper( 5 );
         scene.add( axesHelper );
