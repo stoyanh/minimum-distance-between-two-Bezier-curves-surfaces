@@ -55,34 +55,70 @@ function next_vecs_part(str) {
     return next_part(str, "(", ")");
 }
 
-function substr(str, range) {
-    return str.slice(range.begin, range.end);
+function next_row_part(str) {
+    return next_part(str, "[", "]");
 }
 
-function parse_curves_file(file, curves, on_done) {
+function parse(file, on_load) {
     let textType = /text.*/;
     if (file.type.match(textType))
     {
         let reader = new FileReader();
-        reader.onload = function(e)
-        {
-            let content = e.target.result;
-            let curve_part = next_object_part(content);
-            while (curve_part.part.length > 0) {   
-                let curve_points = [];                  
-                let vecs_part = next_vecs_part(curve_part.part);
+        reader.onload = on_load;
+        reader.readAsText(file);
+    }	
+}
+
+function parse_curves_file(file, curves, on_done) {
+    parse(file, function(e) {
+        let content = e.target.result;
+        let curve_part = next_object_part(content);
+        while (curve_part.part.length > 0) {   
+            let curve_points = [];                  
+            let vecs_part = next_vecs_part(curve_part.part);
+            while (vecs_part.part.length > 0) {
+                let numbers = vecs_part.part.split(',').map(Number);
+                curve_points.push(new THREE.Vector3().fromArray(numbers));
+                vecs_part = next_vecs_part(vecs_part.remaining);
+            }
+
+            curve_part = next_object_part(curve_part.remaining);
+            curves.push(curve_points);
+        }
+        on_done();
+    });
+}
+
+function parse_surfaces_file(file, surfaces, on_done) {
+    parse(file, function(e) {
+        let content = e.target.result;
+        let surface_part = next_object_part(content);
+        while (surface_part.part.length > 0) {
+            let row_part = next_row_part(surface_part.part);
+            let row_size = -1;
+            let surface_points = [];
+            while (row_part.part.length > 0) {
+                let row_points = [];
+                let vecs_part = next_vecs_part(row_part.part);
                 while (vecs_part.part.length > 0) {
                     let numbers = vecs_part.part.split(',').map(Number);
-                    curve_points.push(new THREE.Vector3().fromArray(numbers));
+                    row_points.push(new THREE.Vector3().fromArray(numbers));
                     vecs_part = next_vecs_part(vecs_part.remaining);
                 }
-
-                curve_part = next_object_part(curve_part.remaining);
-                curves.push(curve_points);
+                if (row_size == -1) {
+                    row_size = row_points.length;
+                }
+                else {
+                    if (row_size != row_points.length) {
+                        alert("Control points rows length differ!");
+                    }
+                }
+                surface_points.push(row_points);
+                row_part = next_row_part(row_part.remaining);
             }
-            on_done();
+            surfaces.push(surface_points);
+            surface_part = next_object_part(surface_part.remaining);
         }
-
-        reader.readAsText(file);	
-    }
+        on_done();
+    });
 }
