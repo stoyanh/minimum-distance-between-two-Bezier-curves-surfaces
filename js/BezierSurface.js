@@ -21,20 +21,17 @@ class BezierSurface {
         return res;
     }
 
-    getPoints(divisions_n=50, divisions_m=50) {
-        const points = [];
-        for (let i = 0; i <= divisions_n; ++i) {
-            for (let j = 0; j <= divisions_m; ++j) {
-                points.push(this.getPoint(i / divisions_n, j / divisions_m));
-            }
-        }
-        return points;
-    }
-
     addToScene(scene, addControlPoints, color) {
         const geometry = new THREE.ParametricGeometry( (u, v, vec) => vec.copy(this.getPoint(u, v)), 50, 50 );
         const material = new THREE.MeshBasicMaterial( { color: color, wireframe:true } );
         const mesh = new THREE.Mesh( geometry, material );
         scene.add( mesh );
+        if (addControlPoints) {
+            for (let i = 0; i < this.points.length; ++i) {
+                for (let j = 0; j < this.points[i].length; ++j) {
+                    add_point(scene, this.points[i][j], 0x00ff00, 6);
+                }
+            }
+        }
     }
 };

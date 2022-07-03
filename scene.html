@@ -96,6 +96,23 @@
                 bezier_surface.addToScene(scene, showControlPointsSurfaces, 
                 colors[i % colors.length][0]);
             }
+
+            if (surfaces_points.length < 2) {
+                alert("There must be at least 2 curves!");
+                return;
+            }
+            const sf_points1 = surfaces_points[0];
+            const sf1_domain = {
+                uMin: 0,
+                uMax: 1,
+                vMin: 0,
+                vMax: 1
+            };
+            const sf_points2 = surfaces_points[1];
+            const sf2_domain = {...sf1_domain};
+            //let min_dist = gjk_min_dist(sf_points1.flat(), sf_points2.flat());
+            const min_dist = min_dist_algorithm_surfaces(sf_points1, sf1_domain, sf_points2, sf2_domain, Number.MAX_SAFE_INTEGER);
+            add_distance(scene, [min_dist["point1"], min_dist["point2"]]);
           
             controls.update();
             render_scene();

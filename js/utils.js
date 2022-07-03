@@ -36,6 +36,29 @@ function bernstein_pol(t, n, i) {
     return n_over_i(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
 }
 
+function transpose_2d_array(array) {
+    let res = [];
+    let row_length = -1;
+    let col = [];
+    for (let i = 0; i < array[0].length; ++i) {
+        for (let j = 0; j < array.length; ++j) {
+            col.push(array[j][i]);
+        }
+        res.push(col);
+        col = [];
+    }
+    return res;
+}
+
+function arr_to_2d(array, row_size)  {
+    let res = [];
+    let arr_cpy = [...array];
+    while (arr_cpy.length) {
+        res.push(arr_cpy.splice(0, row_size));
+    }
+    return res;
+}
+
 function next_part(str, start_sym, end_sym) {
     let begin = str.indexOf(start_sym);
     if (begin != -1) {
