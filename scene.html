@@ -10,9 +10,10 @@
     <script src="js/dat.gui.min.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/BezierCurve.js"></script>
+    <script src="js/Basis2D.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/gjk.js"></script>
-    <script src="js/main_algorithm.js"></script>
+    <script src="js/main_algorithm.js"></script>    
 
     <script>
         const scene = new THREE.Scene();
@@ -33,6 +34,9 @@
         let curves_points = [];
         //curve color, points color
         let colors = [[0xff0000, 0xff00aa], [0x32CD32, 0x0000FF]];
+
+        let basis1 = {};
+        let basis2 = {};
 
         function onWindowResize() {
 
@@ -68,6 +72,54 @@
             add_distance(scene, [min_dist["point1"], min_dist["point2"]]);
         }
 
+        function validate_single_curve(curve) {
+            if (curve.length < 3) {
+                throw "how to handle lines";
+            }
+
+            var plane = new THREE.Plane().setFromCoplanarPoints(curve[0], curve[1], curve[curve.length - 1])
+            if (plane.normal.equals(new THREE.Vector3(0, 0, 0))) {
+                alert("Not coplanar points");
+            }
+
+            for (let i = 2; i < curve.length - 1; ++i) {
+                if (plane.distanceToPoint(curve[i]) != 0) {
+                    alert("Points are not coplanar");
+                }
+            }
+        }
+
+        function validate_plane_curves() {
+            if (curves_points.length < 2) {
+                alert("There must be at least 2 curves!");
+                return;
+            }
+            validate_single_curve(curves_points[0])
+            validate_single_curve(curves_points[1])
+        }
+
+        function create_2d_basis(curve) {
+            let A = curve[0]
+            let B = curve[1]
+            let C = curve[curve.length - 1]
+
+            let AB = B.clone().sub(A).normalize()
+            let AC = C.clone().sub(A).normalize()
+
+            var normal = AB.clone().cross(AC).normalize()
+            var xAxis = AB.clone()
+            var yAxis = normal.clone().cross(xAxis).normalize()
+
+            var origin = A.clone()
+            return new Basis2D(origin, xAxis, yAxis)
+        }
+
+        function setup_transformation_matrices() {
+            basis1 = create_2d_basis(curves_points[0])
+            basis2 = create_2d_basis(curves_points[1])
+        }
+
+
         function update() {
             clear_scene();
             const axesHelper = new THREE.AxesHelper( 5 );
@@ -77,6 +129,8 @@
                 bezier_curve.addToScene(scene, showControlPoints, 
                 colors[i % colors.length][0], colors[i % colors.length][1]);
             }
+            validate_plane_curves()
+            setup_transformation_matrices()
             calc_min_dist();
             controls.update();
             render_scene();
