@@ -1,9 +1,9 @@
-function add_point(scene, point, color) {
+function add_point(scene, point, color, size=6) {
     let dotGeometry = new THREE.BufferGeometry();
     let points_array = [];
     point.toArray(points_array);
     dotGeometry.setAttribute('position', new THREE.Float32BufferAttribute(points_array, 3));
-    let dotMaterial = new THREE.PointsMaterial({ size: 6, sizeAttenuation: false, color: color });
+    let dotMaterial = new THREE.PointsMaterial({ size: size, sizeAttenuation: false, color: color });
     let dot = new THREE.Points(dotGeometry, dotMaterial);
     scene.add(dot);
 }

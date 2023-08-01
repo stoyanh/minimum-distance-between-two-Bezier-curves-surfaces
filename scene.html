@@ -11,6 +11,7 @@
     <script src="js/utils.js"></script>
     <script src="js/BezierCurve.js"></script>
     <script src="js/Basis2D.js"></script>
+    <script src="js/Grid2D.js"></script>
     <script src="js/OrbitControls.js"></script>
     <script src="js/gjk.js"></script>
     <script src="js/main_algorithm.js"></script>    
@@ -35,8 +36,13 @@
         //curve color, points color
         let colors = [[0xff0000, 0xff00aa], [0x32CD32, 0x0000FF]];
 
+        let directions1 = [];
+
         let basis1 = {};
         let basis2 = {};
+
+        let grid1 = {};
+        let grid2 = {};
 
         function onWindowResize() {
 
@@ -119,6 +125,118 @@
             basis2 = create_2d_basis(curves_points[1])
         }
 
+        function calculateDirection(currentCodes, closestNode, grid) {
+            function res(code) {
+                return {"code": code, "idx": closestNode};
+            }
+            if (currentCodes.length == 0) {
+                return res(-1);
+            }
+            let lastIdx = currentCodes[currentCodes.length - 1].idx;
+
+            function equal(i, j) {
+                return grid[i][j].equals(grid[lastIdx.j][lastIdx.k]);
+            }
+
+            if (closestNode.j > 0 && equal(closestNode.j - 1, closestNode.k)) {
+                return res(4);
+            }
+            if (closestNode.j > 0 && closestNode.k > 0 && equal(closestNode.j - 1, closestNode.k - 1)) {
+                return res(3);
+            }
+            if (closestNode.k > 0 && equal(closestNode.j, closestNode.k - 1)) {
+                return res(2);
+            }
+            if (closestNode.j < grid.length - 1 && equal(closestNode.j + 1, closestNode.k)) {
+                return res(0);
+            }
+            if (closestNode.j < grid.length - 1 && closestNode.k < grid.length - 1 && equal(closestNode.j + 1, closestNode.k + 1)) {
+                return res(7);
+            }
+            if (closestNode.k < grid.length - 1 && equal(closestNode.j, closestNode.k + 1)) {
+                return res(6);
+            }
+            if (closestNode.j < grid.length - 1 && closestNode.k > 0 && equal(closestNode.j + 1, closestNode.k - 1)) {
+                return res(1);
+            }
+            if (closestNode.j > 0 && closestNode.k < grid.length - 1 && equal(closestNode.j - 1, closestNode.k + 1)) {
+                return res(5);
+            }
+            alert(
+                    "Ne namerih posoka"
+                )
+        }
+
+        function generateChainCode(curve_points, basis, grid) {
+            const chainCode = [];
+
+            let curve = new BezierCurve(curve_points);
+
+            // Traverse the curve and find the grid nodes closest to the curve intersections
+            let points = curve.getPoints(100);
+            for (let i = 0; i < points.length; ++i) {
+                const point = basis.convertTo2D(points[i]);
+
+                // Find the closest grid node to the current point
+                let closestNode = -1;
+                let closestDistance = Infinity;
+                for (let j = 0; j < grid.grid.length; j++) {
+                    for (let k = 0; k < grid.grid[j].length; ++k) {
+                        const node = grid.grid[j][k];
+                        const distance = point.distanceTo(node);
+                        if (distance < closestDistance) {
+                            closestNode = {j, k};
+                            closestDistance = distance;
+                        };
+                    }
+                }
+
+                // Calculate the direction from the current point to the closest node
+                const direction = calculateDirection(chainCode, closestNode, grid.grid);
+
+                add_point(scene, points[i], colors[1][1], 3);
+                add_point(scene,  basis.convertTo3D(grid.grid[closestNode.j][closestNode.k]), colors[1][0], 3);
+
+                // Add the direction to the chain code
+                chainCode.push(direction);
+            }
+
+            return chainCode;
+        }
+
+        function create_grid(curve_points, basis) {
+            let maxX = 0;
+            let maxY = 0;
+            let minX = 0;
+            let minY = 0;
+            let curve = new BezierCurve(curve_points);
+            let points = curve.getPoints(100);
+            for (let i = 0; i < points.length; ++i) {
+                let point = basis.convertTo2D(points[i]);
+               if (!(point. x >= 0 && point.y >= 0)) {
+                alert(
+                    "Ne e dobre"
+                )
+               }
+               if (point.x > maxX) {
+                maxX = point.x;
+               }
+               if (point.y > maxY) {
+                maxY = point.y;
+               }
+            }
+
+           return new Grid2d(maxX, maxY);
+        }
+
+        function create_grids() {
+            grid1 = create_grid(curves_points[0], basis1);
+            // for (let i = 0; i < grid1.grid.length; ++i) {
+            //     add_point(scene,  basis1.convertTo3D(grid1.grid[i]), colors[0][0], 2.5);
+            // }
+            grid2 = create_grid(curves_points[1], basis2);
+        }
+
 
         function update() {
             clear_scene();
@@ -131,6 +249,8 @@
             }
             validate_plane_curves()
             setup_transformation_matrices()
+            create_grids();
+            generateChainCode(curves_points[0], basis1, grid1);
             calc_min_dist();
             controls.update();
             render_scene();
