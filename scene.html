@@ -163,7 +163,7 @@
             for (let i = 0; i < points.length; ++i) {
                 const point = basis.convertTo2D(points[i]);
 
-                add_point(scene, points[i], colors2.green, 1.5);
+                //add_point(scene, points[i], colors2.green, 1.5);
           
                 // Find the closest grid node to the current point
                 let closestNode = -1;
@@ -202,7 +202,7 @@
                if (chainCode.length > 1) {
                 let point1 = basis.convertTo3D(chainCode[chainCode.length - 2].node);
                 let point2 = basis.convertTo3D(chainCode[chainCode.length - 1].node);
-                add_distance(scene, [point1, point2]);
+                //add_distance(scene, [point1, point2]);
                }
 
             }
@@ -238,16 +238,19 @@
 
         function create_grids() {
             grid1 = create_grid(curves_points[0], basis1);
-            for (let i = 0; i < grid1.grid.length; ++i) {
-                for (let j = 0; j < grid1.grid[i].length; ++j) {
-                    add_point(scene,  basis1.convertTo3D(grid1.grid[i][j]), colors[0][0], 2.5);
-                    if (j < grid1.grid[i].length - 1) {
-                        let midPoint = grid1.grid[i][j].clone().add(grid1.grid[i][j + 1]).multiplyScalar(1 / 2);
-                        add_point(scene, basis1.convertTo3D(midPoint), colors[1][1], 1);
+            grid2 = create_grid(curves_points[1], basis2);
+        }
+
+        function drawGrid(grid, basis, color=colors2.red) {
+            for (let i = 0; i < grid.grid.length; ++i) {
+                    for (let j = 0; j < grid.grid[i].length; ++j) {
+                        add_point(scene,  basis.convertTo3D(grid.grid[i][j]), color, 2.5);
+                        if (j < grid.grid[i].length - 1) {
+                            let midPoint = grid.grid[i][j].clone().add(grid.grid[i][j + 1]).multiplyScalar(1 / 2);
+                            //add_point(scene, basis1.convertTo3D(midPoint), colors[1][1], 1);
+                        }
                     }
                 }
-            }
-            grid2 = create_grid(curves_points[1], basis2);
         }
 
 
@@ -256,13 +259,15 @@
             const axesHelper = new THREE.AxesHelper( 5 );
             scene.add( axesHelper );
             for (let i = 0; i < curves_points.length; ++i) {
-                // const bezier_curve = new BezierCurve(curves_points[i]);
-                // bezier_curve.addToScene(scene, showControlPoints, 
-                // colors[(i + 1) % colors.length][0], colors[(i + 1) % colors.length][1]);
+                const bezier_curve = new BezierCurve(curves_points[i]);
+                bezier_curve.addToScene(scene, showControlPoints, 
+                colors[(i + 1) % colors.length][0], colors[(i + 1) % colors.length][1]);
             }
             validate_plane_curves()
             setup_transformation_matrices()
             create_grids();
+            drawGrid(grid1, basis1);
+            drawGrid(grid2, basis2, colors2.purple);
             generateChainCode(curves_points[0], basis1, grid1);
             calc_min_dist();
             controls.update();
