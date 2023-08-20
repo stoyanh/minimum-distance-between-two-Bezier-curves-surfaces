@@ -132,46 +132,25 @@
             basis2 = create_2d_basis(curves_points[1])
         }
 
-        function calculateDirection(currentCodes, closestNode, grid) {
-            function res(code) {
-                return {"code": code, "idx": closestNode};
+        function calculateDirection(prevPoint, currPoint) {
+            const dx = currPoint.x - prevPoint.x;
+            const dy = currPoint.y - prevPoint.y;
+            
+            // Determine the direction based on the vector components
+            let angle = Math.atan2(dy, dx); // Angle in radians
+            
+            // Convert the angle to degrees
+            angle = THREE.MathUtils.radToDeg(angle);
+            
+            // Ensure the angle is positive and map it to the range [0, 360)
+            if (angle < 0) {
+                angle += 360;
             }
-            if (currentCodes.length == 0) {
-                return res(-1);
-            }
-            let lastIdx = currentCodes[currentCodes.length - 1].idx;
-
-            function equal(i, j) {
-                return grid[i][j].equals(grid[lastIdx.j][lastIdx.k]);
-            }
-
-            if (closestNode.j > 0 && equal(closestNode.j - 1, closestNode.k)) {
-                return res(4);
-            }
-            if (closestNode.j > 0 && closestNode.k > 0 && equal(closestNode.j - 1, closestNode.k - 1)) {
-                return res(3);
-            }
-            if (closestNode.k > 0 && equal(closestNode.j, closestNode.k - 1)) {
-                return res(2);
-            }
-            if (closestNode.j < grid.length - 1 && equal(closestNode.j + 1, closestNode.k)) {
-                return res(0);
-            }
-            if (closestNode.j < grid.length - 1 && closestNode.k < grid.length - 1 && equal(closestNode.j + 1, closestNode.k + 1)) {
-                return res(7);
-            }
-            if (closestNode.k < grid.length - 1 && equal(closestNode.j, closestNode.k + 1)) {
-                return res(6);
-            }
-            if (closestNode.j < grid.length - 1 && closestNode.k > 0 && equal(closestNode.j + 1, closestNode.k - 1)) {
-                return res(1);
-            }
-            if (closestNode.j > 0 && closestNode.k < grid.length - 1 && equal(closestNode.j - 1, closestNode.k + 1)) {
-                return res(5);
-            }
-            alert(
-                    "Ne namerih posoka"
-                )
+            
+            // Map the angle to the corresponding Freeman chain code direction
+            const direction = Math.round(angle / 45) % 8;
+            
+            return direction;
         }
 
         function generateChainCode(curve_points, basis, grid) {
@@ -180,36 +159,57 @@
             let curve = new BezierCurve(curve_points);
 
             // Traverse the curve and find the grid nodes closest to the curve intersections
-            let points = curve.getPoints(100);
+            let points = curve.getPoints(500);
             for (let i = 0; i < points.length; ++i) {
                 const point = basis.convertTo2D(points[i]);
 
+                add_point(scene, points[i], colors2.green, 1.5);
+          
                 // Find the closest grid node to the current point
                 let closestNode = -1;
-                let closestDistance = Infinity;
+                let found = false;
                 for (let j = 0; j < grid.grid.length; j++) {
                     for (let k = 0; k < grid.grid[j].length; ++k) {
                         const node = grid.grid[j][k];
                         const distance = point.distanceTo(node);
-                        if (distance < closestDistance) {
+                        if (Math.abs(distance) <= grid.gridDensity / 2)  {
                             closestNode = {j, k};
-                            closestDistance = distance;
+                            found = true;
+                            break;
                         };
+                    }
+                    if (found) {
+                        break;
                     }
                 }
 
+                if (!found) {
+                    continue;
+                }
                 // Calculate the direction from the current point to the closest node
-                const direction = calculateDirection(chainCode, closestNode, grid.grid);
+                let currNode = grid.grid[closestNode.j][closestNode.k];
+                if (chainCode.length > 0) {
+                    if (!currNode.equals(chainCode[chainCode.length - 1].node)) {
+                        const direction = calculateDirection(chainCode[chainCode.length - 1].node, currNode);
+                        // Add the direction to the chain code
+                        chainCode.push({"node": currNode, "dir" : direction});
+                    }
+                }
+                else {
+                    chainCode.push({"node": currNode, "dir": -1});
+                }
 
-                add_point(scene, points[i], colors[1][1], 3);
-                add_point(scene,  basis.convertTo3D(grid.grid[closestNode.j][closestNode.k]), colors[1][0], 3);
+               if (chainCode.length > 1) {
+                let point1 = basis.convertTo3D(chainCode[chainCode.length - 2].node);
+                let point2 = basis.convertTo3D(chainCode[chainCode.length - 1].node);
+                add_distance(scene, [point1, point2]);
+               }
 
-                // Add the direction to the chain code
-                chainCode.push(direction);
             }
-
+            
             return chainCode;
         }
+
 
         function create_grid(curve_points, basis) {
             let maxX = 0;
@@ -217,7 +217,7 @@
             let minX = 0;
             let minY = 0;
             let curve = new BezierCurve(curve_points);
-            let points = curve.getPoints(100);
+            let points = curve.getPoints(500);
             for (let i = 0; i < points.length; ++i) {
                 let point = basis.convertTo2D(points[i]);
                if (!(point. x >= 0 && point.y >= 0)) {
@@ -238,9 +238,15 @@
 
         function create_grids() {
             grid1 = create_grid(curves_points[0], basis1);
-            // for (let i = 0; i < grid1.grid.length; ++i) {
-            //     add_point(scene,  basis1.convertTo3D(grid1.grid[i]), colors[0][0], 2.5);
-            // }
+            for (let i = 0; i < grid1.grid.length; ++i) {
+                for (let j = 0; j < grid1.grid[i].length; ++j) {
+                    add_point(scene,  basis1.convertTo3D(grid1.grid[i][j]), colors[0][0], 2.5);
+                    if (j < grid1.grid[i].length - 1) {
+                        let midPoint = grid1.grid[i][j].clone().add(grid1.grid[i][j + 1]).multiplyScalar(1 / 2);
+                        add_point(scene, basis1.convertTo3D(midPoint), colors[1][1], 1);
+                    }
+                }
+            }
             grid2 = create_grid(curves_points[1], basis2);
         }
 
@@ -250,9 +256,9 @@
             const axesHelper = new THREE.AxesHelper( 5 );
             scene.add( axesHelper );
             for (let i = 0; i < curves_points.length; ++i) {
-                const bezier_curve = new BezierCurve(curves_points[i]);
-                bezier_curve.addToScene(scene, showControlPoints, 
-                colors[i % colors.length][0], colors[i % colors.length][1]);
+                // const bezier_curve = new BezierCurve(curves_points[i]);
+                // bezier_curve.addToScene(scene, showControlPoints, 
+                // colors[(i + 1) % colors.length][0], colors[(i + 1) % colors.length][1]);
             }
             validate_plane_curves()
             setup_transformation_matrices()
