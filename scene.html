@@ -159,7 +159,7 @@
             let curve = new BezierCurve(curve_points);
 
             // Traverse the curve and find the grid nodes closest to the curve intersections
-            let points = curve.getPoints(500);
+            let points = curve.getPoints(5000);
             for (let i = 0; i < points.length; ++i) {
                 const point = basis.convertTo2D(points[i]);
 
@@ -168,8 +168,12 @@
                 // Find the closest grid node to the current point
                 let closestNode = -1;
                 let found = false;
-                for (let j = 0; j < grid.grid.length; j++) {
-                    for (let k = 0; k < grid.grid[j].length; ++k) {
+
+                let jStart = Math.floor(point.x / grid.gridDensity);
+                let kStart = Math.floor(point.y / grid.gridDensity);
+
+                for (let j = jStart; j <= jStart + 1; j++) {
+                    for (let k = kStart; k <= kStart + 1; ++k) {
                         const node = grid.grid[j][k];
                         const distance = point.distanceTo(node);
                         if (Math.abs(distance) <= grid.gridDensity / 2)  {
@@ -198,13 +202,6 @@
                 else {
                     chainCode.push({"node": currNode, "dir": -1});
                 }
-
-               if (chainCode.length > 1) {
-                let point1 = basis.convertTo3D(chainCode[chainCode.length - 2].node);
-                let point2 = basis.convertTo3D(chainCode[chainCode.length - 1].node);
-                //add_distance(scene, [point1, point2]);
-               }
-
             }
             
             return chainCode;
@@ -242,15 +239,123 @@
         }
 
         function drawGrid(grid, basis, color=colors2.red) {
-            for (let i = 0; i < grid.grid.length; ++i) {
-                    for (let j = 0; j < grid.grid[i].length; ++j) {
-                        add_point(scene,  basis.convertTo3D(grid.grid[i][j]), color, 2.5);
-                        if (j < grid.grid[i].length - 1) {
-                            let midPoint = grid.grid[i][j].clone().add(grid.grid[i][j + 1]).multiplyScalar(1 / 2);
-                            //add_point(scene, basis1.convertTo3D(midPoint), colors[1][1], 1);
-                        }
-                    }
+             for (let i = 0; i < grid.grid.length; ++i) {
+                for (let j = 0; j < grid.grid[i].length; ++j) {
+                    add_point(scene,  basis.convertTo3D(grid.grid[i][j]), color, 2.5);
+                    // if (j < grid.grid[i].length - 1) {
+                    //     let midPoint = grid.grid[i][j].clone().add(grid.grid[i][j + 1]).multiplyScalar(1 / 2);
+                    //     add_point(scene, basis1.convertTo3D(midPoint), colors[1][1], 1);
+                    // }
                 }
+            }
+        }
+
+        function drawChainCode(chainCode, grid, basis) {
+            if (chainCode.length > 1) {
+                for (let i = 2; i <= chainCode.length; ++i) {
+                    let density = grid.gridDensity;
+                    let diagonalDensity = Math.sqrt(2 * density * density)
+                    let point1 = basis.convertTo3D(chainCode[i - 2].node);
+                    let point2 = basis.convertTo3D(chainCode[i - 1].node);
+                    let distance = point1.distanceTo(point2);
+                    if (Math.abs(distance - density) > 0.1 && Math.abs(distance - diagonalDensity) > 0.1) {
+                        let a = 0
+                        a += 1
+                    }
+                    add_distance(scene, [point1, point2]);
+                }       
+            }
+        }
+
+        function algorithm() {
+            let chainCode1 = generateChainCode(curves_points[0], basis1, grid1);
+            drawChainCode(chainCode1, grid1, basis1);
+
+            let x = {"min": 0, "max": 0};
+            let y = {"min": 0, "max": 0};
+            for (let i = 0; i < chainCode1.length; ++i) {
+                if (chainCode1[i].node.x < chainCode1[x.min].node.x) {
+                    x.min = i;
+                }
+                if (chainCode1[i].node.y < chainCode1[y.min].node.y) {
+                    y.min = i;
+                }
+                if (chainCode1[i].node.x > chainCode1[x.max].node.x) {
+                    x.max = i;
+                }
+                if (chainCode1[i].node.y > chainCode1[y.max].node.y) {
+                    y.max = i;
+                }
+            }
+
+            let tl = basis1.convertTo3D(new THREE.Vector3(chainCode1[x.min].node.x, chainCode1[y.min].node.y, 0));
+            let tr = basis1.convertTo3D(new THREE.Vector3(chainCode1[x.max].node.x, chainCode1[y.min].node.y, 0));
+            let bl = basis1.convertTo3D(new THREE.Vector3(chainCode1[x.min].node.x, chainCode1[y.max].node.y, 0));
+            let br = basis1.convertTo3D(new THREE.Vector3(chainCode1[x.max].node.x, chainCode1[y.max].node.y, 0));
+
+            add_distance(scene, [tl, tr], colors2.purple);
+            add_distance(scene, [tr, br], colors2.purple);
+            add_distance(scene, [br, bl], colors2.purple);
+            add_distance(scene, [bl, tl], colors2.purple);
+
+            let enclosing_points = [];
+
+            const Axis = {
+                none: -1,
+                min_x: 0,
+                min_y: 1,
+                max_x: 2,
+                max_y: 3
+            };
+
+            let last_on_axis = -1;
+            let axis = Axis.none;
+            function handle_idx(idx, current_axis) {
+                if (axis != current_axis) {
+                    if (axis != Axis.none && (enclosing_points.length < 1 || enclosing_points[enclosing_points.length - 1] != last_on_axis)) {
+                        enclosing_points.push(last_on_axis);
+                    }
+                    enclosing_points.push(idx);
+                }
+                last_on_axis = idx;
+                axis = current_axis;
+            }
+            for (let i = 0; i < chainCode1.length; ++i) {
+                if (chainCode1[i].node.x == chainCode1[x.min].node.x) {
+                    handle_idx(i, Axis.min_x);
+                }
+                else if (chainCode1[i].node.x == chainCode1[x.max].node.x) {
+                    handle_idx(i, Axis.max_i);
+                }
+                else if (chainCode1[i].node.y == chainCode1[y.min].node.y) {
+                    handle_idx(i, Axis.min_y);
+                }
+                else if (chainCode1[i].node.y == chainCode1[y.max].node.y) {
+                    handle_idx(i, Axis.min_y);
+                }
+                // if (chainCode1[i].node.x == chainCode1[x.min].node.x || chainCode1[i].node.x == chainCode1[x.max].node.x) {
+                //     if (chainCode1[i].dir != 2 && chainCode1[i].dir != 6) {
+                //         enclosing_points.push(i);
+                //         start = i;
+                //     }
+                // }
+                // if (chainCode1[i].node.y == chainCode1[y.min].node.y || chainCode1[i].node.y == chainCode1[y.max].node.y) {
+                //     if (chainCode1[i].dir != 0 && chainCode1[i].dir != 4 && enclosing_points[enclosing_points.length - 1] != i) {
+                //         enclosing_points.push(i);
+                //     }
+                // }
+            }
+            if (enclosing_points[enclosing_points.length - 1] != last_on_axis) {
+                enclosing_points.push(last_on_axis);
+            }
+            for (let i = 1; i < enclosing_points.length; ++i) {
+                let start = basis1.convertTo3D(chainCode1[enclosing_points[i - 1]].node);
+                let end = basis1.convertTo3D(chainCode1[enclosing_points[i]].node);
+                add_distance(scene, [start, end], colors2.red);
+            }
+            add_distance(scene, 
+            [basis1.convertTo3D(chainCode1[enclosing_points[enclosing_points.length - 1]].node), 
+             basis1.convertTo3D(chainCode1[enclosing_points[0]])], colors2.red);
         }
 
 
@@ -266,9 +371,9 @@
             validate_plane_curves()
             setup_transformation_matrices()
             create_grids();
-            drawGrid(grid1, basis1);
-            drawGrid(grid2, basis2, colors2.purple);
-            generateChainCode(curves_points[0], basis1, grid1);
+            //drawGrid(grid1, basis1);
+            //drawGrid(grid2, basis2, colors2.purple);
+            algorithm();
             calc_min_dist();
             controls.update();
             render_scene();
