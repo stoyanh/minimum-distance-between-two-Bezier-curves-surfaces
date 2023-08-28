@@ -1,5 +1,5 @@
 class Grid2d {
-    static divisions = 100;
+    static divisions = 3000;
 
     constructor(maxX, maxY) {
         this.gridSize = Math.ceil(maxX) >  Math.ceil(maxY) ?  Math.ceil(maxX) :  Math.ceil(maxY);
